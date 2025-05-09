@@ -46,7 +46,7 @@ export default function Home() {
       const newMessage = inputValue.trim();
       if (newMessage === "") return;
 
-      const updatedMessages = [...messages, ["user", newMessage]];
+      const updatedMessages: [string, string][] = [...messages, ["user", newMessage]];
       setMessages(updatedMessages);
       setPendingMessage(newMessage);
       setInputValue("");
@@ -131,7 +131,7 @@ export default function Home() {
         })
         .then(data => {
           // Add the AI response to the messages array
-          const newMessages = [...messages, ["ai", data]];
+          const newMessages: [string, string][] = [...messages, ["ai", data]];
           setMessages(newMessages);
         })
         .catch(error => {
