@@ -1,4 +1,6 @@
 from flask import Flask, request, jsonify
+from openai import OpenAI
+from Key import KEY
 from uuid import uuid4
 
 # Constants
@@ -40,7 +42,9 @@ FORM_SCHEME = {
     },
 }
 
-data_store = {}
+
+client = OpenAI(api_key=KEY)
+data_store = {}  # Temporary data store for form data
 session_store = {}  # Dictionary to associate session IDs with openAI ChatGPT sessions
 app = Flask(__name__)
 
@@ -77,6 +81,10 @@ def submit_form():
     """
     Submits the form data and stores it in the data store.
 
+    Parameters:
+        session_id (str): The unique identifier for the session, passed as a query parameter.
+        form_data (dict): The form data to be submitted, passed as JSON in the request body.
+
     Returns:
         - 200 OK: JSON object containing the submitted data.
         - 400 Bad Request: JSON object with an error message if the session ID is not found or if the data is invalid.
@@ -94,6 +102,30 @@ def submit_form():
     return jsonify(form_data), 200
 
 
+@app.route("/api/get_form_data", methods=["GET"])
+def get_form_data():
+    """
+    Retrieves the form data for a given session ID.
+
+    Parameters:
+        session_id (str): The unique identifier for the session, passed as a query parameter.
+
+    Returns:
+        - 200 OK: JSON object containing the form data.
+        - 404 Not Found: JSON object with an error message if the session ID is not found.
+        - 404 Not Found: JSON object with an error message if no data is found for the session ID.
+    """
+    session_id = request.args.get("session_id")
+
+    if session_id not in data_store:
+        return jsonify({"error": "Session ID not found"}), 404
+
+    if data_store[session_id] is None:
+        return jsonify({"error": "No data found for this session ID"}), 404
+
+    return jsonify(data_store[session_id]), 200
+
+
 # TODO:
 @app.route("/api/gpt_helper", methods=["GET"])
 def get_gpt_helper():
@@ -103,6 +135,7 @@ def get_gpt_helper():
     Parameters:
         session_id (str): The unique identifier for the session, passed as a query parameter.
         current_question (str): The current question to be answered, passed as a query parameter.
+        first (bool): Indicates if this is the first question
 
     Returns:
         - 200 ok: A JSON response containing the gpt-4.1-nano's response
@@ -112,7 +145,8 @@ def get_gpt_helper():
 
     # check if session_id is in session store
     session_id = request.args.get("session_id")
-    user_question = request.args.get("current_question")
+    user_question = request.args.get("current_question", "")
+    first = request.args.get("first", "false").lower() == "true"
 
     if not user_question:
         return jsonify({"error": "Current question is required"}), 400
@@ -121,10 +155,27 @@ def get_gpt_helper():
 
     user_question = user_question[:USER_QUESTION_LIMIT]
 
-    # Process GPT-4.1-nano's response here
-    # For now, we will just return a dummy response
+    if first:
+        prompt = f"""Give a brieft description of the field {FORM_SCHEME[user_question]['question']} 
+                     and what the user should include in their answer. Be brieft and to the point, 
+                     use emojis to make it more engaging. Use only plain text and no spcial formatting.
+                     like markdown or html."""
+        response = client.responses.create(model=MODEL, input=prompt)
 
-    return "I am gpt-4.1-nano, how can I help you?", 200
+    else:
+        prompt = f"""You are a helpful assistant that will help the user fill out their job application 
+                     form. Only answer the question that is asked and within the scope of the job applications 
+                     and subjects relating to it. Give the applicant good advice to help succeed in their application. 
+                     Keep resonses moderate in size. If within the allowed rules, give user the answer they are looking for.
+                     The current field being filled out is {FORM_SCHEME[user_question]['question']}."""
+        response = client.responses.create(
+            model=MODEL,
+            instructions=prompt,
+            input=user_question,
+        )
+    print(response.output_text)
+
+    return response.output_text, 200
 
 
 if __name__ == "__main__":
