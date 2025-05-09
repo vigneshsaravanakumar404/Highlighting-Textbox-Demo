@@ -6,6 +6,7 @@ type QuestionBoxesProps = {
 };
 
 export type Question = {
+    answer: any;
     id: string;
     title: string;
     type: string;

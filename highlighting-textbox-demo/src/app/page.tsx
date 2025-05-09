@@ -6,9 +6,9 @@ import { ChatComponent } from "../../Components/ChatComponent";
 export default function Home() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [index, setIndex] = useState(0);
-  const [pendingMessage, setPendingMessage] = useState(null);
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState("");
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState<[string, string][]>([
     ["ai", "Feel free to ask me for help in answering these questions!"],
   ]);
   const [inputValue, setInputValue] = useState("");
@@ -40,7 +40,7 @@ export default function Home() {
     }
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: { key: string; shiftKey: any; preventDefault: () => void; }) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       const newMessage = inputValue.trim();
@@ -60,15 +60,16 @@ export default function Home() {
       const response = await fetch(`http://localhost:5000/api/scheme`);
       if (!response.ok) throw new Error("Network response was not ok");
 
-      const raw = await response.json();
+      const raw = await response.json() as Record<string, { question: string; type: string }>;
 
       // Convert the object to an array of question objects
       const formatted = Object.entries(raw)
-        .sort(([keyA], [keyB]) => keyA.localeCompare(keyB)) // Sorting keys alphabetically
+        .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
         .map(([key, value]) => ({
           id: key,
           title: value.question,
           type: value.type === "integer" ? "number" : value.type === "boolean" ? "text" : "text",
+          answer: null, // Initialize the answer property
         }));
 
       setQuestions(formatted);
