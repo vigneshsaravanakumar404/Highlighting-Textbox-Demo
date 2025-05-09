@@ -2,43 +2,51 @@ from flask import Flask, request, jsonify
 from openai import OpenAI
 from Key import KEY
 from uuid import uuid4
+from flask_cors import CORS
 
 # Constants
 USER_QUESTION_LIMIT = 1000
 MODEL = "gpt-4.1-nano"
 FORM_SCHEME = {
-    "name": {"type": "string", "question": "What is your full name?"},
-    "age": {"type": "integer", "question": "What is your age?"},
-    "position_applied": {
+    "tell_me_about_yourself": {
         "type": "string",
-        "question": "What position are you applying for?",
+        "question": "Tell me about yourself.",
     },
-    "years_of_experience": {
-        "type": "integer",
-        "question": "How many years of experience do you have?",
-    },
-    "has_portfolio": {"type": "boolean", "question": "Do you have a portfolio?"},
-    "github_link": {"type": "string", "question": "What is your GitHub link?"},
-    "cover_letter_submitted": {
-        "type": "boolean",
-        "question": "Have you submitted a cover letter?",
-    },
-    "expected_salary": {"type": "integer", "question": "What is your expected salary?"},
-    "willing_to_relocate": {
-        "type": "boolean",
-        "question": "Are you willing to relocate?",
-    },
-    "available_start_date": {
+    "why_this_role": {
         "type": "string",
-        "question": "What is your available start date?",
+        "question": "Why are you interested in this role?",
     },
-    "certifications": {
+    "strengths": {
         "type": "string",
-        "question": "What certifications do you have?",
+        "question": "What are your greatest strengths?",
     },
-    "has_reference_contacts": {
-        "type": "boolean",
-        "question": "Do you have reference contacts?",
+    "weaknesses": {
+        "type": "string",
+        "question": "What is your biggest weakness?",
+    },
+    "challenging_project": {
+        "type": "string",
+        "question": "Describe a challenging project you worked on. What was your role and how did you overcome the challenges?",
+    },
+    "teamwork_experience": {
+        "type": "string",
+        "question": "Can you give an example of how you worked effectively within a team?",
+    },
+    "conflict_resolution": {
+        "type": "string",
+        "question": "Tell me about a time you had a conflict with a colleague. How did you resolve it?",
+    },
+    "aaName": {
+        "type": "string",
+        "question": "What is your name?",
+    },
+    "leadership_example": {
+        "type": "string",
+        "question": "Describe a time when you demonstrated leadership.",
+    },
+    "why_should_we_hire_you": {
+        "type": "string",
+        "question": "Why should we hire you?",
     },
 }
 
@@ -47,6 +55,7 @@ client = OpenAI(api_key=KEY)
 data_store = {}  # Temporary data store for form data
 session_store = {}  # Dictionary to associate session IDs with openAI ChatGPT sessions
 app = Flask(__name__)
+CORS(app)
 
 
 @app.route("/api/scheme", methods=["GET"])
@@ -135,6 +144,7 @@ def get_gpt_helper():
     Parameters:
         session_id (str): The unique identifier for the session, passed as a query parameter.
         current_question (str): The current question to be answered, passed as a query parameter.
+        user_question (str): The user's question, passed as a query parameter.
         first (bool): Indicates if this is the first question
 
     Returns:
@@ -145,6 +155,7 @@ def get_gpt_helper():
 
     # check if session_id is in session store
     session_id = request.args.get("session_id")
+    current_question = request.args.get("current_question", "")
     user_question = request.args.get("current_question", "")
     first = request.args.get("first", "false").lower() == "true"
 
@@ -156,23 +167,25 @@ def get_gpt_helper():
     user_question = user_question[:USER_QUESTION_LIMIT]
 
     if first:
-        prompt = f"""Give a brieft description of the field {FORM_SCHEME[user_question]['question']} 
-                     and what the user should include in their answer. Be brieft and to the point, 
-                     use emojis to make it more engaging. Use only plain text and no spcial formatting.
-                     like markdown or html."""
+        prompt = f"""Give a brieft description of the field {FORM_SCHEME[current_question]['question']} 
+                     and what the user should include in their answer. Be brieft and to the point. 
+                     Use only plain text and no spcial formatting. like markdown or html."""
+        previous_response_id = session_store[session_id]
         response = client.responses.create(model=MODEL, input=prompt)
 
     else:
         prompt = f"""You are a helpful assistant that will help the user fill out their job application 
-                     form. Only answer the question that is asked and within the scope of the job applications 
-                     and subjects relating to it. Give the applicant good advice to help succeed in their application. 
-                     Keep resonses moderate in size. If within the allowed rules, give user the answer they are looking for.
-                     The current field being filled out is {FORM_SCHEME[user_question]['question']}."""
+                     form. Give the applicant good advice to help succeed in their application. 
+                     Keep resonses moderate in size. The current field being filled out is {FORM_SCHEME[user_question]['question']}."""
+        previous_response_id = session_store[session_id]
         response = client.responses.create(
             model=MODEL,
             instructions=prompt,
             input=user_question,
         )
+
+    session_store[session_id] = response.id
+
     print(response.output_text)
 
     return response.output_text, 200
