@@ -175,7 +175,7 @@ def get_gpt_helper():
 
     else:
         prompt = f"""You are a helpful assistant that will help the user fill out their job application 
-                     form. Give the applicant good advice to help succeed in their application. 
+                     form. Answer the applicant's question in a way that will help them answer the question and be specific to what they asked. 
                      Keep resonses moderate in size. The current field being filled out is {FORM_SCHEME[user_question]['question']}."""
         previous_response_id = session_store[session_id]
         response = client.responses.create(

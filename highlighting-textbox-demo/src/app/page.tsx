@@ -29,7 +29,7 @@ export default function Home() {
   // Create a session when the component mounts
   const createSession = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/create_session");
+      const response = await fetch("https://6c7rr56q-5000.use.devtunnels.ms/api/create_session");
       if (!response.ok) throw new Error("Failed to create session");
 
       const data = await response.json();
@@ -57,7 +57,7 @@ export default function Home() {
 
   const fetchQuestions = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/scheme`);
+      const response = await fetch(`https://6c7rr56q-5000.use.devtunnels.ms/api/scheme`);
       if (!response.ok) throw new Error("Network response was not ok");
 
       const raw = await response.json() as Record<string, { question: string; type: string }>;
@@ -93,7 +93,7 @@ export default function Home() {
 
   const getAIResponse = async (questionId: string, current_question: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/gpt_helper?session_id=${sessionId}&current_question=${questionId}&current_question=${encodeURIComponent(current_question)}`);
+      const response = await fetch(`https://6c7rr56q-5000.use.devtunnels.ms/api/gpt_helper?session_id=${sessionId}&current_question=${questionId}&current_question=${encodeURIComponent(current_question)}`);
 
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
@@ -122,7 +122,7 @@ export default function Home() {
     // Only make the API request if we have a valid sessionId
     if (sessionId && index < questions.length && first) {
       // make a request to the server for AI message /api/gpt_helper
-      fetch(`http://localhost:5000/api/gpt_helper?session_id=${sessionId}&current_question=${currentQuestionId}&current_question=${encodeURIComponent(JSON.stringify(questions[index]))}&first=${first}`)
+      fetch(`https://6c7rr56q-5000.use.devtunnels.ms/api/gpt_helper?session_id=${sessionId}&current_question=${currentQuestionId}&current_question=${encodeURIComponent(JSON.stringify(questions[index]))}&first=${first}`)
         .then(response => {
           if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -148,7 +148,7 @@ export default function Home() {
     }));
     const postData = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/submit_form?session_id=${sessionId}`, {
+        const response = await fetch(`https://6c7rr56q-5000.use.devtunnels.ms/api/submit_form?session_id=${sessionId}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
